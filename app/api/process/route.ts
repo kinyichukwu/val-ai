@@ -6,7 +6,7 @@ import sharp from "sharp";
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   timeout: 60000, // 60 second timeout
-  maxRetries: 3, // Retry failed requests up to 3 times
+  maxRetries: 5, // Retry failed requests up to 3 times
 });
 
 // Generate cartoon version using DALL-E 3
@@ -17,7 +17,7 @@ async function generateCartoonVersion(imageBuffer: Buffer) {
 
     // First, analyze the image with a timeout
     const analysisPromise = openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "user",
