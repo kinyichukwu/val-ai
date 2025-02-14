@@ -156,10 +156,10 @@ export const config = {
   api: {
     bodyParser: false,
   },
-  memory: 3008, // Maximum memory allocation (Pro plan)
+  memory: 1024, // Free plan memory limit
 };
 
 // Add these configurations
-export const maxDuration = 300; // 5 minutes
+export const maxDuration = 10; // Free plan timeout limit (10 seconds)
 export const preferredRegion = "iad1"; // US East (N. Virginia)
 export const revalidate = 0; // disable cache
