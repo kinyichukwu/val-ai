@@ -39,7 +39,7 @@ export function NavHeader() {
 
           {/* GitHub Icon */}
           <a
-            href="https://github.com/yourusername/yourrepo"
+            href="https://github.com/kinyichukwu/val-ai"
             target="_blank"
             rel="noreferrer"
             className="hover:text-pink-500 transition-colors"

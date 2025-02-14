@@ -53,7 +53,7 @@ export default function RootLayout({
                     val.ai
                   </a>
                 </p>
-                <ThemeSwitcher />
+         
               </footer>
             </main>
           </div>
