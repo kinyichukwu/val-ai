@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OpenAI } from "openai";
-import sharp from "sharp";
 
 // Initialize OpenAI with shorter timeouts
 const openai = new OpenAI({
@@ -10,10 +9,8 @@ const openai = new OpenAI({
 });
 
 // Generate cartoon version using DALL-E 3
-async function generateCartoonVersion(imageBuffer: Buffer) {
+async function generateCartoonVersion(base64Image: string) {
   try {
-    const base64Image = imageBuffer.toString("base64");
-
     // First, analyze the image with a shorter timeout
     const analysisPromise = openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -73,13 +70,13 @@ async function generateCartoonVersion(imageBuffer: Buffer) {
     ]);
 
     if (!response) {
-      throw new Error("Failed to generate image");
+      throw new Error("Generation failed. Please try again.");
     }
 
     return [response.data[0].url];
   } catch (error) {
     console.error("Error generating cartoon version:", error);
-    throw error;
+    throw new Error("Generation failed due to timeout. Please try again in a few moments. 🙏");
   }
 }
 
@@ -107,18 +104,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert File to Buffer with more aggressive compression
+    // Convert File to base64
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // More aggressive image optimization
-    const optimizedBuffer = await sharp(buffer)
-      .resize(800, 800, { fit: "inside" }) // Smaller size
-      .jpeg({ quality: 60 }) // Lower quality
-      .toBuffer();
+    const base64 = Buffer.from(bytes).toString('base64');
 
     // Generate cartoon version with timeout
-    const imageUrls = await generateCartoonVersion(optimizedBuffer);
+    const imageUrls = await generateCartoonVersion(base64);
 
     return NextResponse.json({
       success: true,
@@ -133,7 +124,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "The request took too long to process. Please try again.",
+          error: "Generation failed due to timeout. Please try again in a few moments. 🙏",
         },
         { status: 504 }
       );
