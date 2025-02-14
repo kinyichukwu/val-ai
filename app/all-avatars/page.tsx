@@ -20,7 +20,7 @@ export default function AllAvatars() {
             {/* TODO: Add avatar grid here */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <p className="text-muted-foreground text-center col-span-full">
-                No avatars generated yet. Head back to create your first one!
+                Coming soon!
               </p>
             </div>
           </div>
