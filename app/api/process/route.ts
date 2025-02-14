@@ -151,11 +151,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export const runtime = "nodejs";
-
 // Configure API route to handle larger payloads
 export const config = {
   api: {
     bodyParser: false,
   },
+  memory: 3008, // Maximum memory allocation (Pro plan)
 };
+
+// Add these configurations
+export const maxDuration = 300; // 5 minutes
+export const preferredRegion = "iad1"; // US East (N. Virginia)
+export const revalidate = 0; // disable cache
