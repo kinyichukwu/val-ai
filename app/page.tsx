@@ -139,7 +139,7 @@ export default function Home() {
       const data = await result.json();
 
       if (!data.success || !data.variations) {
-        throw new Error(data.error);
+        throw new Error("Image gen time-out");
       }
 
       const supabase = createClient();
