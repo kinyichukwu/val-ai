@@ -3,9 +3,13 @@
 import { FileInput } from "@/components/ui/file-input";
 import { ImageDisplay } from "@/components/ui/image-display";
 import { useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
+import { v4 as uuidv4 } from "uuid";
 
 export default function Home() {
   const [images, setImages] = useState<string[]>([]);
+  const router = useRouter();
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return;
@@ -48,14 +52,28 @@ export default function Home() {
 
       const data = await result.json();
 
-      if (!data.success) {
+      if (!data.success || !data.variations) {
         throw new Error(data.error);
       }
 
-      // Handle the cartoon variations
-      console.log("Cartoon variations:", data.variations);
-      // TODO: Update UI with the cartoon images
-      
+      // Store the generated image in Supabase
+      const supabase = createClient();
+      const { data: imageData, error: insertError } = await supabase
+        .from("generated_images")
+        .insert([
+          {
+            image_url: data.variations[0],
+            created_at: new Date().toISOString(),
+            u_id: uuidv4(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Redirect to the image page
+      router.push(`/image/${imageData.u_id}`);
     } catch (error) {
       console.error("Error processing image:", error);
       // TODO: Show error message to user
