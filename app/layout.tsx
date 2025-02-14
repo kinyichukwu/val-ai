@@ -12,7 +12,7 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata = {
   metadataBase: new URL(defaultUrl),
   title: "Val.ai",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  description: "Transform your photos into beautiful AI-generated cartoon art. Create magical animated versions of your special moments.",
 };
 
 const geistSans = Geist({
