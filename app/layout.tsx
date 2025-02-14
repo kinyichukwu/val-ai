@@ -3,6 +3,7 @@ import { NavHeader } from "@/components/ui/nav-header";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
+import { Toaster } from 'sonner';
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -56,6 +57,7 @@ export default function RootLayout({
               </footer>
             </main>
           </div>
+          <Toaster richColors position="top-center" />
         </ThemeProvider>
       </body>
     </html>

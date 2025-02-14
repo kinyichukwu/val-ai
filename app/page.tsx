@@ -7,6 +7,9 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import { getRandomQuote } from "@/constants/quotes";
+import { toast } from "sonner";
+
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB in bytes
 
 export default function Home() {
   const [images, setImages] = useState<string[]>([]);
@@ -36,6 +39,61 @@ export default function Home() {
     setLoadingQuote(getRandomQuote());
   };
 
+  const compressImage = async (blob: Blob): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(blob);
+
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > height) {
+          if (width > 1024) {
+            height = Math.round((height * 1024) / width);
+            width = 1024;
+          }
+        } else {
+          if (height > 1024) {
+            width = Math.round((width * 1024) / height);
+            height = 1024;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Failed to compress image"));
+            }
+          },
+          "image/jpeg",
+          0.8 // compression quality
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        reject(new Error("Failed to load image"));
+      };
+    });
+  };
+
   const handleAction = async () => {
     if (images.length === 0) return;
 
@@ -49,7 +107,24 @@ export default function Home() {
 
       // Convert base64 to blob
       const response = await fetch(imageUrl);
-      const blob = await response.blob();
+      let blob = await response.blob();
+
+      // Check original file size
+      if (blob.size > MAX_FILE_SIZE) {
+        console.log(`Original size: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+        // Compress the image
+        blob = await compressImage(blob);
+        console.log(
+          `Compressed size: ${(blob.size / 1024 / 1024).toFixed(2)}MB`
+        );
+
+        // Check if still too large after compression
+        if (blob.size > MAX_FILE_SIZE) {
+          throw new Error(
+            "Image is too large. Please use a smaller image (max 4MB)."
+          );
+        }
+      }
 
       // Create FormData
       const formData = new FormData();
@@ -67,28 +142,8 @@ export default function Home() {
         throw new Error(data.error);
       }
 
-      // // Download the generated image and upload to Supabase Storage
-      // const imageResponse = await fetch(data.variations[0]);
-      // const imageBlob = await imageResponse.blob();
-
       const supabase = createClient();
       const u_id = uuidv4();
-
-      // // Upload to Supabase Storage
-      // const { data: uploadData, error: uploadError } = await supabase.storage
-      //   .from("avatars")
-      //   .upload(`${u_id}.png`, imageBlob, {
-      //     contentType: "image/png",
-      //     cacheControl: "3600",
-      //     upsert: false,
-      //   });
-
-      // if (uploadError) throw uploadError;
-
-      // // Get the public URL
-      // const { data: publicUrlData } = supabase.storage
-      //   .from("avatars")
-      //   .getPublicUrl(`${u_id}.png`);
 
       // Store the reference in the database
       const { data: imageData, error: insertError } = await supabase
@@ -109,7 +164,9 @@ export default function Home() {
       router.push(`/image/${u_id}`);
     } catch (error) {
       console.error("Error processing image:", error);
-      // TODO: Show error message to user
+      toast.error(
+        error instanceof Error ? error.message : "Failed to process image"
+      );
     } finally {
       clearInterval(quoteInterval);
       setIsLoading(false);
