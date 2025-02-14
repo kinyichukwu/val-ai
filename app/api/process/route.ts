@@ -2,20 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { OpenAI } from "openai";
 import sharp from "sharp";
 
-// Initialize OpenAI with timeout
+// Initialize OpenAI with shorter timeouts
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  timeout: 60000, // 60 second timeout
-  maxRetries: 5, // Retry failed requests up to 3 times
+  timeout: 30000, // 30 second timeout
+  maxRetries: 5,
 });
 
 // Generate cartoon version using DALL-E 3
 async function generateCartoonVersion(imageBuffer: Buffer) {
   try {
-    // Convert buffer to base64 for the prompt
     const base64Image = imageBuffer.toString("base64");
 
-    // First, analyze the image with a timeout
+    // First, analyze the image with a shorter timeout
     const analysisPromise = openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -35,14 +34,14 @@ async function generateCartoonVersion(imageBuffer: Buffer) {
           ],
         },
       ],
-      max_tokens: 250,
+      max_tokens: 500,
     });
 
-    // Add timeout to analysis
+    // Add shorter timeout to analysis
     const analysisResponse = await Promise.race([
       analysisPromise,
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Analysis timeout")), 30000)
+        setTimeout(() => reject(new Error("Analysis timeout")), 8000)
       ),
     ]);
 
@@ -52,7 +51,7 @@ async function generateCartoonVersion(imageBuffer: Buffer) {
 
     const imageDescription = analysisResponse.choices[0].message.content;
 
-    // Generate cartoon version using DALL-E 3 with timeout
+    // Generate cartoon version with shorter timeout
     const generatePromise = openai.images.generate({
       model: "dall-e-3",
       prompt: `Create a high-quality, animated version of this scene: ${imageDescription}. 
@@ -65,11 +64,11 @@ async function generateCartoonVersion(imageBuffer: Buffer) {
       style: "vivid",
     });
 
-    // Add timeout to generation
+    // Add shorter timeout to generation
     const response = await Promise.race([
       generatePromise,
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Generation timeout")), 30000)
+        setTimeout(() => reject(new Error("Generation timeout")), 8000)
       ),
     ]);
 
@@ -108,14 +107,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert File to Buffer
+    // Convert File to Buffer with more aggressive compression
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Optimize image before processing
+    // More aggressive image optimization
     const optimizedBuffer = await sharp(buffer)
-      .resize(1024, 1024, { fit: "inside" })
-      .jpeg({ quality: 80 })
+      .resize(800, 800, { fit: "inside" }) // Smaller size
+      .jpeg({ quality: 60 }) // Lower quality
       .toBuffer();
 
     // Generate cartoon version with timeout
@@ -130,7 +129,6 @@ export async function POST(request: NextRequest) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
 
-    // Return specific error messages for timeouts
     if (errorMessage.includes("timeout")) {
       return NextResponse.json(
         {
@@ -151,15 +149,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Configure API route to handle larger payloads
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-  memory: 1024, // Free plan memory limit
-};
+// Use edge runtime
+export const runtime = 'edge';
 
-// Add these configurations
-export const maxDuration = 10; // Free plan timeout limit (10 seconds)
-export const preferredRegion = "iad1"; // US East (N. Virginia)
-export const revalidate = 0; // disable cache
+// Configure shorter timeouts
+export const maxDuration = 10;
+export const preferredRegion = "iad1";

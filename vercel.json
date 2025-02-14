@@ -4,5 +4,15 @@
       "maxDuration": 10
     }
   },
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "routes": [
+    {
+      "src": "/api/process",
+      "dest": "/api/process",
+      "headers": {
+        "Cache-Control": "no-store, max-age=0",
+        "x-middleware-cache": "no-cache"
+      }
+    }
+  ]
 } 
